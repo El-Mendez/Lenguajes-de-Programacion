@@ -1,19 +1,25 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Binary {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Binary {
     Concat, Or
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Unary {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Unary {
     Kleene
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Operator {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Operator {
     Binary(Binary),
     Unary(Unary),
     OpenParenthesis,
     CloseParenthesis,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Symbol {
+    Epsilon,
+    Character(char)
 }
 
 impl Operator {
@@ -35,38 +41,40 @@ impl Operator {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum RegularExpressionTokens {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RegularExpressionToken {
     Operator(Operator),
-    Symbol(char)
+    Symbol(Symbol)
 }
 
-fn tokenize_regular_expression(input: &str) -> Vec<RegularExpressionTokens> {
+pub fn tokenize_regular_expression(input: &str) -> Vec<RegularExpressionToken> {
     let mut output = Vec::new();
 
     let mut chars = input.chars();
 
     while let Some(c) = chars.next() {
         let new_token = match c {
-            '(' => RegularExpressionTokens::Operator(Operator::OpenParenthesis),
-            ')' => RegularExpressionTokens::Operator(Operator::CloseParenthesis),
-            '|' => RegularExpressionTokens::Operator(Operator::Binary(Binary::Or)),
-            '*' => RegularExpressionTokens::Operator(Operator::Unary(Unary::Kleene)),
-            '\\' => RegularExpressionTokens::Symbol(chars.next()
-                .expect("Expected an special character after: '\\'")),
-            x => RegularExpressionTokens::Symbol(x)
+            '(' => RegularExpressionToken::Operator(Operator::OpenParenthesis),
+            ')' => RegularExpressionToken::Operator(Operator::CloseParenthesis),
+            '|' => RegularExpressionToken::Operator(Operator::Binary(Binary::Or)),
+            '*' => RegularExpressionToken::Operator(Operator::Unary(Unary::Kleene)),
+            '\\' => RegularExpressionToken::Symbol(Symbol::Character(
+                chars.next()
+                .expect("Expected an special character after: '\\'"))),
+            'ε' => RegularExpressionToken::Symbol(Symbol::Epsilon),
+            x => RegularExpressionToken::Symbol(Symbol::Character(x))
         };
 
         // add an explicit concatenation token when needed
-        if matches!(new_token, RegularExpressionTokens::Symbol(_))
-            || matches!(new_token, RegularExpressionTokens::Operator(Operator::OpenParenthesis)) {
+        if matches!(new_token, RegularExpressionToken::Symbol(_))
+            || matches!(new_token, RegularExpressionToken::Operator(Operator::OpenParenthesis)) {
 
             if let Some(old_token) = output.last() {
-                if matches!(old_token, RegularExpressionTokens::Operator(Operator::Unary(_))) ||
-                    matches!(old_token, RegularExpressionTokens::Symbol(_)) ||
-                    *old_token == RegularExpressionTokens::Operator(Operator::CloseParenthesis) {
+                if matches!(old_token, RegularExpressionToken::Operator(Operator::Unary(_))) ||
+                    matches!(old_token, RegularExpressionToken::Symbol(_)) ||
+                    *old_token == RegularExpressionToken::Operator(Operator::CloseParenthesis) {
 
-                    output.push(RegularExpressionTokens::Operator(Operator::Binary(Binary::Concat)))
+                    output.push(RegularExpressionToken::Operator(Operator::Binary(Binary::Concat)))
                 }
             }
         }
@@ -77,14 +85,14 @@ fn tokenize_regular_expression(input: &str) -> Vec<RegularExpressionTokens> {
     output
 }
 
-fn to_postfix(input: Vec<RegularExpressionTokens>) -> Vec<RegularExpressionTokens> {
-    let mut output: Vec<RegularExpressionTokens> = Vec::new();
+pub fn to_postfix(input: Vec<RegularExpressionToken>) -> Vec<RegularExpressionToken> {
+    let mut output: Vec<RegularExpressionToken> = Vec::new();
     let mut stack: Vec<Operator> = Vec::new();
 
     for token in input {
         match token {
-            RegularExpressionTokens::Symbol(x) => output.push(RegularExpressionTokens::Symbol(x)),
-            RegularExpressionTokens::Operator(operation) => {
+            RegularExpressionToken::Symbol(x) => output.push(RegularExpressionToken::Symbol(x)),
+            RegularExpressionToken::Operator(operation) => {
                 match operation {
                     Operator::OpenParenthesis => stack.push(Operator::OpenParenthesis),
                     Operator::CloseParenthesis => {
@@ -93,7 +101,7 @@ fn to_postfix(input: Vec<RegularExpressionTokens>) -> Vec<RegularExpressionToken
                             if last == Operator::OpenParenthesis {
                                 break;
                             }
-                            output.push(RegularExpressionTokens::Operator(last))
+                            output.push(RegularExpressionToken::Operator(last))
                         }
                     },
 
@@ -102,7 +110,7 @@ fn to_postfix(input: Vec<RegularExpressionTokens>) -> Vec<RegularExpressionToken
                             if operation.order() > other.order() {
                                 break
                             }
-                            output.push(RegularExpressionTokens::Operator(stack.pop().unwrap()))
+                            output.push(RegularExpressionToken::Operator(stack.pop().unwrap()))
                         }
                         stack.push(operation)
                     }
@@ -112,40 +120,41 @@ fn to_postfix(input: Vec<RegularExpressionTokens>) -> Vec<RegularExpressionToken
     }
 
     while let Some(operation) = stack.pop() {
-        output.push(RegularExpressionTokens::Operator(operation))
+        output.push(RegularExpressionToken::Operator(operation))
     }
     output
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::tokenize::{RegularExpressionTokens, to_postfix, tokenize_regular_expression};
+    use crate::lexer::tokenize::{RegularExpressionToken, to_postfix, tokenize_regular_expression};
     use crate::lexer::tokenize::Operator::{CloseParenthesis, OpenParenthesis, Unary, Binary};
     use crate::lexer::tokenize::Unary::Kleene;
     use crate::lexer::tokenize::Binary::{Concat, Or};
+    use crate::lexer::tokenize::Symbol::Character;
 
     #[test]
     fn tokenization() {
         let actual = tokenize_regular_expression(r"abc*\*|\|(d)\(\)");
         let expected = vec![
-            RegularExpressionTokens::Symbol('a'),
-            RegularExpressionTokens::Operator(Binary(Concat)),
-            RegularExpressionTokens::Symbol('b'),
-            RegularExpressionTokens::Operator(Binary(Concat)),
-            RegularExpressionTokens::Symbol('c'),
-            RegularExpressionTokens::Operator(Unary(Kleene)),
-            RegularExpressionTokens::Operator(Binary(Concat)),
-            RegularExpressionTokens::Symbol('*'),
-            RegularExpressionTokens::Operator(Binary(Or)),
-            RegularExpressionTokens::Symbol('|'),
-            RegularExpressionTokens::Operator(Binary(Concat)),
-            RegularExpressionTokens::Operator(OpenParenthesis),
-            RegularExpressionTokens::Symbol('d'),
-            RegularExpressionTokens::Operator(CloseParenthesis),
-            RegularExpressionTokens::Operator(Binary(Concat)),
-            RegularExpressionTokens::Symbol('('),
-            RegularExpressionTokens::Operator(Binary(Concat)),
-            RegularExpressionTokens::Symbol(')'),
+            RegularExpressionToken::Symbol(Character('a')),
+            RegularExpressionToken::Operator(Binary(Concat)),
+            RegularExpressionToken::Symbol(Character('b')),
+            RegularExpressionToken::Operator(Binary(Concat)),
+            RegularExpressionToken::Symbol(Character('c')),
+            RegularExpressionToken::Operator(Unary(Kleene)),
+            RegularExpressionToken::Operator(Binary(Concat)),
+            RegularExpressionToken::Symbol(Character('*')),
+            RegularExpressionToken::Operator(Binary(Or)),
+            RegularExpressionToken::Symbol(Character('|')),
+            RegularExpressionToken::Operator(Binary(Concat)),
+            RegularExpressionToken::Operator(OpenParenthesis),
+            RegularExpressionToken::Symbol(Character('d')),
+            RegularExpressionToken::Operator(CloseParenthesis),
+            RegularExpressionToken::Operator(Binary(Concat)),
+            RegularExpressionToken::Symbol(Character('(')),
+            RegularExpressionToken::Operator(Binary(Concat)),
+            RegularExpressionToken::Symbol(Character(')')),
         ];
 
         assert_eq!(expected, actual);
@@ -156,16 +165,16 @@ mod tests {
         let input = tokenize_regular_expression("(a|b)(c|d)*e");
         let actual = to_postfix(input);
         let expected = vec![
-            RegularExpressionTokens::Symbol('a'),
-            RegularExpressionTokens::Symbol('b'),
-            RegularExpressionTokens::Operator(Binary(Or)),
-            RegularExpressionTokens::Symbol('c'),
-            RegularExpressionTokens::Symbol('d'),
-            RegularExpressionTokens::Operator(Binary(Or)),
-            RegularExpressionTokens::Operator(Unary(Kleene)),
-            RegularExpressionTokens::Operator(Binary(Concat)),
-            RegularExpressionTokens::Symbol('e'),
-            RegularExpressionTokens::Operator(Binary(Concat)),
+            RegularExpressionToken::Symbol(Character('a')),
+            RegularExpressionToken::Symbol(Character('b')),
+            RegularExpressionToken::Operator(Binary(Or)),
+            RegularExpressionToken::Symbol(Character('c')),
+            RegularExpressionToken::Symbol(Character('d')),
+            RegularExpressionToken::Operator(Binary(Or)),
+            RegularExpressionToken::Operator(Unary(Kleene)),
+            RegularExpressionToken::Operator(Binary(Concat)),
+            RegularExpressionToken::Symbol(Character('e')),
+            RegularExpressionToken::Operator(Binary(Concat)),
         ];
 
         assert_eq!(expected, actual);
