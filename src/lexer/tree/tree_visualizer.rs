@@ -1,14 +1,17 @@
 use std::io::Write;
-use crate::lexer::tree::{ReNode, UnaryOperator, BinaryOperator, Symbol, Visitor};
+use super::{Visitable, Visitor};
+use super::operator::{UnaryOperator, BinaryOperator};
+use super::symbols::{Symbol};
+use super::lexing_tree::ReNode;
 
-pub struct TreeVisualizer {
+pub struct ReNodeVisualizer {
     last_id: usize,
     mermaid: String,
 }
 
-impl TreeVisualizer {
+impl ReNodeVisualizer {
     pub fn new() -> Self {
-        TreeVisualizer { last_id: 0, mermaid: String::new() }
+        ReNodeVisualizer { last_id: 0, mermaid: String::new() }
     }
 
     fn add_description(&mut self, id: usize, description: &str, is_terminal: bool) {
@@ -100,7 +103,7 @@ impl TreeVisualizer {
     }
 }
 
-impl Visitor<()> for TreeVisualizer {
+impl Visitor<ReNode> for ReNodeVisualizer {
     fn visit(&mut self, node: &ReNode) {
         match node {
             ReNode::Unary { value, child } =>

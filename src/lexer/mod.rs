@@ -1,2 +1,2 @@
 pub mod tree;
-pub mod tree_visualizer;
+mod visitor;

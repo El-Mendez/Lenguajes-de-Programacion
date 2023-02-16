@@ -1,8 +1,8 @@
 use std::fmt::Debug;
+use super::Visitable;
 use super::operator::{UnaryOperator, BinaryOperator, Operator};
-use super::symbols::{Symbol};
+use super::symbols::Symbol;
 use super::tokenize::{to_postfix, tokenize_regular_expression, ReToken};
-use super::visitor::Visitor;
 
 
 #[derive(Debug, PartialEq, Eq)]
@@ -40,11 +40,9 @@ impl ReNode {
             }
         }
     }
-
-    pub fn accept<T>(&self, visitor: &mut impl Visitor<T>) -> T {
-        visitor.visit(self)
-    }
 }
+
+impl<T> Visitable<T> for ReNode {}
 
 impl From<Vec<ReToken>> for ReNode {
     fn from(mut value: Vec<ReToken>) -> Self {

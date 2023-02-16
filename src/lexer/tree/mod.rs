@@ -2,9 +2,11 @@ mod lexing_tree;
 mod operator;
 mod symbols;
 mod tokenize;
-mod visitor;
+mod tree_visualizer;
 
-pub use lexing_tree::{ReNode};
-pub use operator::{UnaryOperator, BinaryOperator};
+use super::visitor::{Visitable, Visitor};
+
+pub use lexing_tree::ReNode;
+pub use operator::{BinaryOperator, UnaryOperator};
 pub use symbols::Symbol;
-pub use visitor::Visitor;
+pub use tree_visualizer::ReNodeVisualizer;
