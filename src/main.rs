@@ -1,6 +1,8 @@
 mod lexer;
 
 fn main() {
-    // lexer::expression_tree::from_string("abc");
-    println!("hello world")
+    let tree = lexer::tree::ReNode::from("(a|b)*a(a|b)\\ε(a|ε)");
+    let graph = lexer::tree_visualizer::TreeVisualizer::new();
+
+    println!("{}", graph.graph(&tree, "./test.html"));
 }

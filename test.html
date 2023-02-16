@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" /></head>
+  <body>
+    <pre class="mermaid">
+      flowchart TD
+        0((".")) 
+        0 --> 1 
+        1((".")) 
+        1 --> 2 
+        2((".")) 
+        2 --> 3 
+        3((".")) 
+        3 --> 4 
+        4(("*")) 
+        4 --> 5 
+        5(("|")) 
+        5 --> 6 
+        6(("a")) 
+        style 6 fill:#f9f 
+        5 --> 7 
+        7(("b")) 
+        style 7 fill:#f9f 
+        3 --> 8 
+        8(("a")) 
+        style 8 fill:#f9f 
+        2 --> 9 
+        9(("|")) 
+        9 --> 10 
+        10(("a")) 
+        style 10 fill:#f9f 
+        9 --> 11 
+        11(("b")) 
+        style 11 fill:#f9f 
+        1 --> 12 
+        12(("ε")) 
+        style 12 fill:#f9f 
+        0 --> 13 
+        13(("|")) 
+        13 --> 14 
+        14(("a")) 
+        style 14 fill:#f9f 
+        13 --> 15 
+        15(("ε")) 
+    </pre>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+  </body>
+</html>
+        
