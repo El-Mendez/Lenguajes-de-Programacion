@@ -42,7 +42,7 @@ impl ReNode {
     }
 
     pub fn accept<T>(&self, visitor: &mut impl Visitor<T>) -> T {
-        visitor.visit(&self)
+        visitor.visit(self)
     }
 }
 

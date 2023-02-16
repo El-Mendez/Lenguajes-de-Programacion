@@ -11,15 +11,15 @@ impl TreeVisualizer {
         TreeVisualizer { last_id: 0, mermaid: String::new() }
     }
 
-    fn add_description(&mut self, id: usize, description: &str, isTerminal: bool) {
-        self.mermaid += &format!("\n        {}((\"{}\")) ", id, description);
-        if isTerminal {
-            self.mermaid += &format!("\n        style {} fill:#f9f ", id);
+    fn add_description(&mut self, id: usize, description: &str, is_terminal: bool) {
+        self.mermaid += &format!("\n        {id}((\"{description}\")) ");
+        if is_terminal {
+            self.mermaid += &format!("\n        style {id} fill:#f9f ");
         }
     }
 
     fn add_connection(&mut self, from: usize, to: usize) {
-        self.mermaid += &format!("\n        {} --> {} ", from, to);
+        self.mermaid += &format!("\n        {from} --> {to} ");
     }
 
     fn visit_unary(&mut self, value: UnaryOperator, child: &ReNode) {
@@ -78,7 +78,7 @@ impl TreeVisualizer {
 <html lang="en"><head><meta charset="utf-8" /></head>
   <body>
     <pre class="mermaid">
-      flowchart TD{}
+      flowchart TD{diagram}
     </pre>
     <script type="module">
       import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
@@ -86,7 +86,7 @@ impl TreeVisualizer {
     </script>
   </body>
 </html>
-        "#, diagram)
+        "#)
     }
 
     fn write_to_file(contents: &str, path: &str) {
@@ -101,15 +101,15 @@ impl TreeVisualizer {
 }
 
 impl Visitor<()> for TreeVisualizer {
-    fn visit(&mut self, node: &ReNode) -> () {
-        match &node {
-            &ReNode::Unary { value, child } =>
-                self.visit_unary(*value, &child),
+    fn visit(&mut self, node: &ReNode) {
+        match node {
+            ReNode::Unary { value, child } =>
+                self.visit_unary(*value, child),
 
-            &ReNode::Binary { value, left_child, right_child } =>
-                self.visit_binary(*value, &left_child, &right_child),
+            ReNode::Binary { value, left_child, right_child } =>
+                self.visit_binary(*value, left_child, right_child),
 
-            &ReNode::Leaf { value } =>
+            ReNode::Leaf { value } =>
                 self.visit_leaf(*value)
         }
     }
