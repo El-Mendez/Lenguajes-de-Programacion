@@ -86,6 +86,20 @@ impl NFABuilder {
                         self.connect(next_end, end, Symbol::Epsilon);
 
                         end
+                    },
+
+                    UnaryOperator::Maybe => {
+                        let end = self.build_automata(child, starting_state);
+                        self.connect(starting_state, end, Symbol::Epsilon);
+
+                        end
+                    }
+
+                    UnaryOperator::Many => {
+                        let end = self.build_automata(child, starting_state);
+                        self.connect(end, starting_state, Symbol::Epsilon);
+
+                        end
                     }
                 }
             }

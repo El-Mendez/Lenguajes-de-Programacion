@@ -30,6 +30,8 @@ impl ReNodeVisualizer {
 
         let description = match value {
             UnaryOperator::Kleene => "*",
+            UnaryOperator::Maybe => "?",
+            UnaryOperator::Many => "+",
         };
         self.add_description(id, description, false);
 

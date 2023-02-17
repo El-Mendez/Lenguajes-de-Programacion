@@ -22,6 +22,8 @@ pub fn tokenize_regular_expression(input: &str) -> Vec<ReToken> {
             ')' => ReToken::Operator(CloseParenthesis),
             '|' => ReToken::Operator(Binary(Or)),
             '*' => ReToken::Operator(Unary(Kleene)),
+            '?' => ReToken::Operator(Unary(Maybe)),
+            '+' => ReToken::Operator(Unary(Many)),
             '\\' => ReToken::Symbol(Character(
                 chars.next()
                 .expect("Expected an special character after: '\\'"))),

@@ -5,7 +5,7 @@ pub enum BinaryOperator {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnaryOperator {
-    Kleene
+    Kleene, Maybe, Many
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,7 +20,7 @@ impl Operator {
         match self {
             Operator::Unary(operation) => {
                 match operation {
-                    UnaryOperator::Kleene => 3,
+                    UnaryOperator::Kleene | UnaryOperator::Maybe | UnaryOperator::Many => 3,
                 }
             }
             Operator::Binary(operation) => {
