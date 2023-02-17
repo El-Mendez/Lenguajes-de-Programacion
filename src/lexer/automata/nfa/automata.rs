@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
-use crate::lexer::automata::nfa_builder::NFABuilder;
-use super::super::tree::{Symbol, ReNode};
-use super::{State, Automata};
+use super::builder::NFABuilder;
+use super::super::super::tree::{Symbol, ReNode};
+use super::super::{State, Automata};
 
 pub struct NFAutomata {
     pub transitions: HashMap<(State, Symbol), HashSet<State>>,

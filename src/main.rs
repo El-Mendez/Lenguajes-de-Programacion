@@ -1,4 +1,4 @@
-use crate::lexer::automata::{NFAutomata, NFAVisualizer};
+use crate::lexer::automata::nfa::{NFAutomata, NFAVisualizer};
 
 mod lexer;
 

@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
-use crate::lexer::tree::{BinaryOperator, ReNode, UnaryOperator};
-use super::super::tree::Symbol;
-use super::State;
+use super::super::super::tree::{UnaryOperator, BinaryOperator, ReNode, Symbol};
+use super::super::State;
 
 
 pub struct NFABuilder {
@@ -51,9 +50,7 @@ impl NFABuilder {
                 match operator {
                     BinaryOperator::Concat => {
                         let connection_state = self.build_automata(left_node, starting_state);
-                        let end_state = self.build_automata(right_node, connection_state);
-
-                        end_state
+                        self.build_automata(right_node, connection_state)
                     },
                     BinaryOperator::Or => {
                         let top_start = self.create_state();

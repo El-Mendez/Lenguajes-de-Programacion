@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
-use std::fmt::format;
 use std::io::Write;
-use crate::lexer::automata::{NFAutomata, State};
-use crate::lexer::tree::Symbol;
+use super::automata::{NFAutomata};
+use super::super::State;
+use super::super::super::tree::Symbol;
 
 pub struct NFAVisualizer {
     mermaid: String,
