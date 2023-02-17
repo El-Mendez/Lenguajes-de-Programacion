@@ -96,6 +96,7 @@ impl ReNodeVisualizer {
         let mut f = std::fs::OpenOptions::new()
             .create(true)
             .write(true)
+            .truncate(true)
             .open(path)
             .unwrap();
         f.write_all(contents.as_bytes()).unwrap();
