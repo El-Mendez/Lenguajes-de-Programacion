@@ -1,7 +1,6 @@
-use crate::lexer::automata::nfa::NFAutomata;
-use crate::lexer::automata::dfa::{DFAutomata, DFAVisualizer};
+use lexer::automata::nfa::NFAutomata;
+use lexer::automata::dfa::{DFAutomata, DFAVisualizer};
 
-mod lexer;
 
 fn main() {
     // let tree = lexer::tree::ReNode::from("(a|b)*a(a|b)\\ε(a|ε)");
