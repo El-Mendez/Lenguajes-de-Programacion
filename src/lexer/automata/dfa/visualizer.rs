@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
+use std::process::Command;
 use super::automata::{DFAutomata};
 use super::super::State;
 use super::super::super::tree::Symbol;
@@ -95,6 +96,10 @@ impl DFAVisualizer {
 
         let html = DFAVisualizer::generate_html(&self.mermaid);
         DFAVisualizer::write_to_file(&html, file);
+        Command::new(if cfg!(unix) { "open" } else { "start "})
+            .arg(file)
+            .spawn()
+            .unwrap();
         html
     }
 }
