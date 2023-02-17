@@ -1,4 +1,5 @@
 pub mod nfa;
+pub mod dfa;
 
 use super::visitor::{Visitable, Visitor};
 

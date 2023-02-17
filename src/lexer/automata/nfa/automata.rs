@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use super::builder::NFABuilder;
 use super::super::super::tree::{Symbol, ReNode};
 use super::super::{State, Automata};
+use super::super::dfa::DFAutomata;
 
 pub struct NFAutomata {
     pub transitions: HashMap<(State, Symbol), HashSet<State>>,
@@ -9,10 +10,9 @@ pub struct NFAutomata {
 }
 
 impl NFAutomata {
-    fn epsilon_closure(&self, state: State) -> HashSet<State> {
-        let mut visited_states = HashSet::from([state]);
-        let mut new_states = self.single_movement(state, Symbol::Epsilon)
-            .expect("epsilon transitions should always return at least return the caller!") - &visited_states;
+    fn epsilon_closure(&self, state: HashSet<State>) -> HashSet<State> {
+        let mut visited_states = state;
+        let mut new_states = self.movement(&visited_states, Symbol::Epsilon);
 
         while !new_states.is_empty() {
             visited_states.extend(&new_states);
@@ -35,6 +35,50 @@ impl NFAutomata {
     fn single_movement(&self, state: State, symbol: Symbol) -> Option<&HashSet<State>>  {
         self.transitions.get(&(state, symbol))
     }
+
+    pub fn into_determinate(self) -> DFAutomata {
+        let symbols: HashSet<Symbol> = self.transitions
+            .keys()
+            .map(|(_, x)| *x)
+            .filter(|x| matches!(x, Symbol::Character(_)))
+            .collect();
+
+
+        let mut acceptance_states = HashSet::new();
+        let mut transitions = HashMap::new();
+
+        let mut known_states = vec![
+            self.epsilon_closure(HashSet::from([0]))
+        ];
+
+        let mut current_state_id = 0;
+        loop {
+            let current_state = &known_states[current_state_id].clone();
+
+            if current_state.contains(&self.acceptance_state) {
+                acceptance_states.insert(current_state_id);
+            }
+
+            for x in &symbols {
+                let new_state = self.epsilon_closure(self.movement(current_state, *x));
+                let to = known_states.iter()
+                    .position(|other| other == &new_state)
+                    .unwrap_or_else(|| {
+                        known_states.push(new_state);
+                        known_states.len() - 1
+                    });
+
+                transitions.insert((current_state_id, *x), to);
+            }
+
+            current_state_id += 1;
+            if current_state_id == known_states.len() {
+                break;
+            }
+        }
+
+        DFAutomata { transitions, acceptance_states, last_state: current_state_id-1 }
+    }
 }
 
 impl Automata for NFAutomata {
@@ -42,7 +86,11 @@ impl Automata for NFAutomata {
 
         let final_states = input
             .chars()
-            .fold(HashSet::from([0]), |states, c| self.movement(&states, Symbol::Character(c)));
+            .fold(
+                self.epsilon_closure(HashSet::from([0])),
+                |states, c| {
+                    self.epsilon_closure(self.movement(&states, Symbol::Character(c)))
+            });
 
         final_states.contains(&self.acceptance_state)
     }
@@ -70,6 +118,8 @@ impl From<&str> for NFAutomata {
         }
     }
 }
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
