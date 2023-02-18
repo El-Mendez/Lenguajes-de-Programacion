@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
-use super::super::super::tree::{UnaryOperator, BinaryOperator, ReNode, Symbol};
+use crate::{UnaryOperator, BinaryOperator, Symbol};
+use super::super::super::tree::LexTree;
 use super::super::State;
 
 
@@ -9,7 +10,7 @@ pub struct NFABuilder {
 }
 
 impl NFABuilder {
-    pub fn build(node: &ReNode) -> NFABuilder {
+    pub fn build(node: &LexTree) -> NFABuilder {
         let mut builder = NFABuilder { transitions: HashMap::new(), last_state: 0 };
 
         // create the root state
@@ -37,16 +38,16 @@ impl NFABuilder {
         self.last_state
     }
 
-    fn build_automata(&mut self, node: &ReNode, starting_state: State) -> State {
+    fn build_automata(&mut self, node: &LexTree, starting_state: State) -> State {
         match node {
-            ReNode::Leaf { value } => {
+            LexTree::Leaf { value } => {
                 let next_state = self.create_state();
                 self.connect(starting_state, next_state, *value);
 
                 next_state
             }
 
-            ReNode::Binary { value: operator, right_child: right_node, left_child: left_node } => {
+            LexTree::Binary { value: operator, right_child: right_node, left_child: left_node } => {
                 match operator {
                     BinaryOperator::Concat => {
                         let connection_state = self.build_automata(left_node, starting_state);
@@ -73,7 +74,7 @@ impl NFABuilder {
                 }
             },
 
-            ReNode::Unary { value: operator, child } => {
+            LexTree::Unary { value: operator, child } => {
                 match operator {
                     UnaryOperator::Kleene => {
                         let next_start = self.create_state();

@@ -1,17 +1,17 @@
-use std::io::Write;
 use super::{Visitable, Visitor};
-use super::operator::{UnaryOperator, BinaryOperator};
-use super::symbols::{Symbol};
-use super::lexing_tree::ReNode;
+use crate::{UnaryOperator, BinaryOperator, Symbol, MermaidGraph};
+use super::LexTree;
 
-pub struct ReNodeVisualizer {
+pub struct LexTreeVisualizer {
     last_id: usize,
     mermaid: String,
 }
 
-impl ReNodeVisualizer {
-    pub fn new() -> Self {
-        ReNodeVisualizer { last_id: 0, mermaid: String::new() }
+impl LexTreeVisualizer {
+    pub fn new(node: &LexTree) -> Self {
+        let mut visualizer = LexTreeVisualizer { last_id: 0, mermaid: String::new() };
+        visualizer.visit(node);
+        visualizer
     }
 
     fn add_description(&mut self, id: usize, description: &str, is_terminal: bool) {
@@ -25,7 +25,7 @@ impl ReNodeVisualizer {
         self.mermaid += &format!("\n        {from} --> {to} ");
     }
 
-    fn visit_unary(&mut self, value: UnaryOperator, child: &ReNode) {
+    fn visit_unary(&mut self, value: UnaryOperator, child: &LexTree) {
         let id = self.last_id;
 
         let description = match value {
@@ -41,7 +41,7 @@ impl ReNodeVisualizer {
         child.accept(self);
     }
 
-    fn visit_binary(&mut self, value: BinaryOperator, left_child: &ReNode, right_child: &ReNode) {
+    fn visit_binary(&mut self, value: BinaryOperator, left_child: &LexTree, right_child: &LexTree) {
         let id = self.last_id;
 
         let description = match value {
@@ -69,54 +69,33 @@ impl ReNodeVisualizer {
         self.add_description(self.last_id, &description, matches!(value, Symbol::Character(_)));
     }
 
-    pub fn graph(mut self, node: &ReNode, file_name: &str) -> String {
-        self.visit(node);
-        let content = Self::generate_html(&self.mermaid);
-        Self::write_to_file(&content, file_name);
-
-        content
-    }
-
-    fn generate_html(diagram: &str) -> String {
-        format!(r#"
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8" /></head>
-  <body>
-    <pre class="mermaid">
-      flowchart TD{diagram}
-    </pre>
-    <script type="module">
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
-      mermaid.initialize({{ startOnLoad: true }});
-    </script>
-  </body>
-</html>
-        "#)
-    }
-
-    fn write_to_file(contents: &str, path: &str) {
-        let mut f = std::fs::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(path)
-            .unwrap();
-        f.write_all(contents.as_bytes()).unwrap();
-        f.flush().unwrap();
+    pub fn show(&self, path: &str) -> String {
+        self.generate_and_open_graph(path)
     }
 }
 
-impl Visitor<ReNode> for ReNodeVisualizer {
-    fn visit(&mut self, node: &ReNode) {
+impl Visitor<LexTree> for LexTreeVisualizer {
+    fn visit(&mut self, node: &LexTree) {
         match node {
-            ReNode::Unary { value, child } =>
+            LexTree::Unary { value, child } =>
                 self.visit_unary(*value, child),
 
-            ReNode::Binary { value, left_child, right_child } =>
+            LexTree::Binary { value, left_child, right_child } =>
                 self.visit_binary(*value, left_child, right_child),
 
-            ReNode::Leaf { value } =>
+            LexTree::Leaf { value } =>
                 self.visit_leaf(*value)
         }
     }
 }
+
+impl MermaidGraph for LexTreeVisualizer {
+    fn header(&self) -> &'static str {
+        "flowchart TD"
+    }
+
+    fn get_mermaid_content(&self) -> &str {
+        &self.mermaid
+    }
+}
+

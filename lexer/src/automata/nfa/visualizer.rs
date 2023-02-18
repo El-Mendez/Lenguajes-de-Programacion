@@ -1,34 +1,20 @@
 use std::collections::{HashMap, HashSet};
-use std::io::Write;
 use super::automata::{NFAutomata};
 use super::super::State;
-use super::super::super::tree::Symbol;
+use crate::{Symbol, MermaidGraph};
 
 pub struct NFAVisualizer {
     mermaid: String,
 }
 
 impl NFAVisualizer {
-   pub fn new() -> NFAVisualizer {
-       NFAVisualizer { mermaid: String::new() }
-   }
+   pub fn new(automata: &NFAutomata) -> NFAVisualizer {
+       let mut visualizer = NFAVisualizer { mermaid: String::new() };
+       visualizer.add_descriptions(automata.acceptance_state);
+       visualizer.add_transitions(&automata.transitions);
 
-    fn generate_html(diagram: &str) -> String {
-        format!(r#"
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8" /></head>
-  <body>
-    <pre class="mermaid">
-      graph LR{diagram}
-    </pre>
-    <script type="module">
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
-      mermaid.initialize({{ startOnLoad: true }});
-    </script>
-  </body>
-</html>
-        "#)
-    }
+       visualizer
+   }
 
     fn add_descriptions(&mut self, last_id: State) {
         (0..last_id).for_each(|id| self.mermaid += &format!("\n        {id}(({id}))"));
@@ -55,23 +41,17 @@ impl NFAVisualizer {
         }
     }
 
-    fn write_to_file(contents: &str, path: &str) {
-        let mut f = std::fs::OpenOptions::new()
-            .create(true)
-            .truncate(true)
-            .write(true)
-            .open(path)
-            .unwrap();
-        f.write_all(contents.as_bytes()).unwrap();
-        f.flush().unwrap();
+    pub fn show(&self, path: &str) -> String {
+        self.generate_and_open_graph(path)
+    }
+}
+
+impl MermaidGraph for NFAVisualizer {
+    fn header(&self) -> &'static str {
+        "graph LR"
     }
 
-    pub fn graph(&mut self, automata: &NFAutomata, file: &str) -> String{
-        self.add_descriptions(automata.acceptance_state);
-        self.add_transitions(&automata.transitions);
-
-        let html = NFAVisualizer::generate_html(&self.mermaid);
-        NFAVisualizer::write_to_file(&html, file);
-        html
+    fn get_mermaid_content(&self) -> &str {
+        &self.mermaid
     }
 }

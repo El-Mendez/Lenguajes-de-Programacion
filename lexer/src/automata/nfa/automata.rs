@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use super::builder::NFABuilder;
-use super::super::super::tree::{Symbol, ReNode};
+use crate::Symbol;
+use crate::tree::LexTree;
 use super::super::{State, Automata};
 use super::super::dfa::DFAutomata;
 
@@ -36,22 +37,21 @@ impl NFAutomata {
         self.transitions.get(&(state, symbol))
     }
 
-    pub fn into_determinate(self) -> DFAutomata {
-        let symbols: HashSet<Symbol> = self.transitions
+    pub(crate) fn into_determinate(self) -> DFAutomata {
+        let chars_with_transitions: HashSet<char> = self.transitions
             .keys()
-            .map(|(_, x)| *x)
-            .filter(|x| matches!(x, Symbol::Character(_)))
+            .filter_map(|(_, x)| if let Symbol::Character(x) = x { Some(*x) } else { None })
             .collect();
 
 
         let mut acceptance_states = HashSet::new();
         let mut transitions = HashMap::new();
+        let mut current_state_id = 0;
 
         let mut known_states = vec![
             self.epsilon_closure(HashSet::from([0]))
         ];
 
-        let mut current_state_id = 0;
         loop {
             let current_state = &known_states[current_state_id].clone();
 
@@ -59,8 +59,8 @@ impl NFAutomata {
                 acceptance_states.insert(current_state_id);
             }
 
-            for x in &symbols {
-                let new_state = self.epsilon_closure(self.movement(current_state, *x));
+            for x in &chars_with_transitions {
+                let new_state = self.epsilon_closure(self.movement(current_state, Symbol::Character(*x)));
                 let to = known_states.iter()
                     .position(|other| other == &new_state)
                     .unwrap_or_else(|| {
@@ -77,7 +77,7 @@ impl NFAutomata {
             }
         }
 
-        DFAutomata { transitions, acceptance_states, last_state: current_state_id-1 }
+        DFAutomata::new(transitions, acceptance_states, current_state_id-1)
     }
 }
 
@@ -96,8 +96,8 @@ impl Automata for NFAutomata {
     }
 }
 
-impl From<ReNode> for NFAutomata {
-    fn from(value: ReNode) -> Self {
+impl From<LexTree> for NFAutomata {
+    fn from(value: LexTree) -> Self {
         let builder = NFABuilder::build(&value);
 
         NFAutomata {
@@ -109,7 +109,7 @@ impl From<ReNode> for NFAutomata {
 
 impl From<&str> for NFAutomata {
     fn from(value: &str) -> Self {
-        let node = ReNode::from(value);
+        let node = LexTree::from(value);
         let builder = NFABuilder::build(&node);
 
         NFAutomata {

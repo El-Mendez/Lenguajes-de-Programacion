@@ -1,28 +1,27 @@
 use std::collections::{HashMap, HashSet};
-use super::super::Automata;
+use super::super::{Automata, State};
 use super::super::nfa::NFAutomata;
-use super::super::State;
-use super::super::super::tree::Symbol;
 
 pub struct DFAutomata {
-    pub transitions: HashMap<(State, Symbol), State>,
-    pub acceptance_states: HashSet<State>,
-    pub last_state: State
+    pub(super) transitions: HashMap<(State, char), State>,
+    pub(super) acceptance_states: HashSet<State>,
+    pub(super) last_state: State
 }
 
 impl DFAutomata {
-    fn movement(&self, state: State, symbol: Symbol) -> Option<State> {
-        match symbol {
-            Symbol::Epsilon => Some(state),
-            Symbol::Character(_) => self.transitions.get(&(state, symbol)).copied()
-        }
+    pub(crate) fn new(transitions: HashMap<(State, char), State>, acceptance_states: HashSet<State>, last_state: State) -> DFAutomata {
+        DFAutomata { transitions, acceptance_states, last_state }
+    }
+
+    fn movement(&self, state: State, c: char) -> Option<State> {
+        self.transitions.get(&(state, c)).copied()
     }
 }
 
 impl Automata for DFAutomata {
     fn test(&self, input: &str) -> bool {
         let final_state = input.chars()
-            .try_fold(0, |state, x| self.movement(state, Symbol::Character(x)));
+            .try_fold(0, |state, x| self.movement(state, x));
 
         if let Some(final_state) = final_state {
             return self.acceptance_states.contains(&final_state)
