@@ -31,10 +31,19 @@ pub trait MermaidGraph {
     }
 
     fn open_file(file: &str) {
-        Command::new(if cfg!(unix) { "open" } else { "start "})
-            .arg(file)
-            .spawn()
-            .unwrap();
+        if cfg!(unix) {
+            Command::new("open")
+                .arg(file)
+                .spawn()
+                .unwrap();
+        } else {
+            Command::new("cmd")
+                .arg("/c")
+                .arg("start")
+                .arg(file)
+                .spawn()
+                .unwrap();
+        }
     }
 
     fn header(&self) -> &'static str;
