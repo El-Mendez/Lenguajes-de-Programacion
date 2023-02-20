@@ -1,9 +1,8 @@
 use crate::UnaryOperator::*;
 use crate::BinaryOperator::*;
 use crate::Operator::*;
-use crate::Symbol;
+use crate::{Symbol, Operator, LexError};
 use Symbol::*;
-use crate::Operator;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LexToken {
@@ -11,7 +10,7 @@ pub enum LexToken {
     Symbol(Symbol)
 }
 
-pub fn tokenize_regular_expression(input: &str) -> Vec<LexToken> {
+pub fn tokenize_regular_expression(input: &str) -> Result<Vec<LexToken>, LexError> {
     let mut output = Vec::new();
 
     let mut chars = input.chars();
@@ -24,9 +23,8 @@ pub fn tokenize_regular_expression(input: &str) -> Vec<LexToken> {
             '*' => LexToken::Operator(Unary(Kleene)),
             '?' => LexToken::Operator(Unary(Maybe)),
             '+' => LexToken::Operator(Unary(Many)),
-            '\\' => LexToken::Symbol(Character(
-                chars.next()
-                .expect("Expected an special character after: '\\'"))),
+            '\\' => LexToken::Symbol(Character(chars.next()
+                .ok_or(LexError::MissingArgument)?)),
             'ε' => LexToken::Symbol(Epsilon),
             x => LexToken::Symbol(Character(x))
         };
@@ -48,10 +46,10 @@ pub fn tokenize_regular_expression(input: &str) -> Vec<LexToken> {
         output.push(new_token)
     }
 
-    output
+    Ok(output)
 }
 
-pub fn to_postfix(input: Vec<LexToken>) -> Vec<LexToken> {
+pub fn to_postfix(input: Vec<LexToken>) -> Result<Vec<LexToken>, LexError> {
     let mut output: Vec<LexToken> = Vec::new();
     let mut stack: Vec<Operator> = Vec::new();
 
@@ -63,7 +61,7 @@ pub fn to_postfix(input: Vec<LexToken>) -> Vec<LexToken> {
                     OpenParenthesis => stack.push(OpenParenthesis),
                     CloseParenthesis => {
                         loop {
-                            let last = stack.pop().expect("Missing Opening Parenthesis");
+                            let last = stack.pop().ok_or(LexError::MissingOpeningParenthesis)?;
                             if last == OpenParenthesis {
                                 break;
                             }
@@ -88,7 +86,7 @@ pub fn to_postfix(input: Vec<LexToken>) -> Vec<LexToken> {
     while let Some(operation) = stack.pop() {
         output.push(LexToken::Operator(operation))
     }
-    output
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -97,7 +95,7 @@ mod tests {
 
     #[test]
     fn tokenization() {
-        let actual = tokenize_regular_expression(r"abc*\*|\|(d)\(\)");
+        let actual = tokenize_regular_expression(r"abc*\*|\|(d)\(\)").unwrap();
         let expected = vec![
             LexToken::Symbol(Character('a')),
             LexToken::Operator(Binary(Concat)),
@@ -124,8 +122,8 @@ mod tests {
 
     #[test]
     fn postfix() {
-        let input = tokenize_regular_expression("(a|b)(c|d)*e");
-        let actual = to_postfix(input);
+        let input = tokenize_regular_expression("(a|b)(c|d)*e").unwrap();
+        let actual = to_postfix(input).unwrap();
         let expected = vec![
             LexToken::Symbol(Character('a')),
             LexToken::Symbol(Character('b')),

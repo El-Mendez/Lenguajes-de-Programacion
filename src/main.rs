@@ -3,9 +3,12 @@ use lexer::automata::dfa::{DFAutomata, DFAVisualizer};
 
 
 fn main() {
-    let automata = NFAutomata::from("a+bc?");//.into_determinate();
-    let graph = NFAVisualizer::new(&automata);
+    let expression = "a*b|ε";
 
+    match NFAutomata::try_from(expression) {
+        Ok(automata) => { NFAVisualizer::new(&automata)
+            .show("./test.html"); },
 
-    // println!("{}", graph.show("./test.html"));
+        Err(e) => println!("There was an error in your expression: {e:?}")
+    };
 }

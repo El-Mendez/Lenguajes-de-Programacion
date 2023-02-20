@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use super::builder::NFABuilder;
-use crate::Symbol;
+use crate::{LexError, Symbol};
 use crate::tree::LexTree;
 use super::super::{State, Automata};
 use super::super::dfa::DFAutomata;
@@ -107,18 +107,19 @@ impl From<LexTree> for NFAutomata {
     }
 }
 
-impl From<&str> for NFAutomata {
-    fn from(value: &str) -> Self {
-        let node = LexTree::from(value);
+impl TryFrom<&str> for NFAutomata {
+    type Error = LexError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let node = LexTree::try_from(value)?;
         let builder = NFABuilder::build(&node);
 
-        NFAutomata {
+        Ok(NFAutomata {
             transitions: builder.transitions,
             acceptance_state: builder.last_state,
-        }
+        })
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -126,7 +127,7 @@ mod tests {
 
     #[test]
     fn simple_expression() {
-        let automata = NFAutomata::from("a");
+        let automata = NFAutomata::try_from("a").unwrap();
         assert!(automata.test("a"))
     }
 }
