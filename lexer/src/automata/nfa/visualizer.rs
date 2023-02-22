@@ -26,7 +26,7 @@ impl NFAVisualizer {
             Symbol::Character(x) => self.mermaid += &format!("\n        {from} -->|\"{x}\"| {to}"),
             Symbol::Epsilon => {
                 if from != to {
-                    self.mermaid += &format!("\n        {from} --> {to}")
+                    self.mermaid += &format!("\n        {from} -->|ε| {to}")
                 }
             },
         }

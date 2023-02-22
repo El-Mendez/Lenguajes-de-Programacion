@@ -1,68 +1,66 @@
-use dialoguer::{theme::ColorfulTheme, Select, Input};
-use lexer::LexError;
-use lexer::tree::{LexTree, LexTreeVisualizer};
+use clap::{Parser, ValueEnum};
 use lexer::automata::dfa::{DFAutomata, DFAVisualizer};
 use lexer::automata::nfa::{NFAutomata, NFAVisualizer};
+use lexer::tree::{LexTree, LexTreeVisualizer};
+use lexer::automata::Automata;
+
+#[derive(Parser)]
+#[command(author, version, about)]
+struct Cli {
+    /// a regular expression defining a language
+    #[arg(value_parser = valid_expression)]
+    expression: String,
+    /// optional string to test against the language
+    string: Option<String>,
+    /// the automata of tree to create from the input expression
+    #[arg(short, long, value_enum, default_value_t = Mode::NFA)]
+    mode: Mode,
+}
+
+fn valid_expression(s: &str) -> Result<String, String> {
+    if let Ok(_) = LexTree::try_from(s) {
+        Ok(s.into())
+    } else {
+        Err("\n\n\tinvalid re expression".into())
+    }
+}
+
+#[derive(Copy, Clone, ValueEnum)]
+enum Mode {
+    /// LexTree
+    Tree,
+    /// NDA built using Thompson
+    NFA,
+    /// DFA built from a Thompson NDA
+    ThompsonDFA,
+}
 
 fn main() {
-    let theme = ColorfulTheme::default();
+    let cli = Cli::parse();
+    let tree = LexTree::try_from(cli.expression.as_str()).unwrap(); // because of the validation this won't fail
 
-    let selections = vec![
-        "Árbol de expresiones",
-        "Autómata finito no determinista",
-        "Autómata finito determinista",
-        "Salir",
-    ];
+    if let Some(s) = &cli.string {
+        let automata: Box<dyn Automata> = match cli.mode {
+            Mode::NFA => Box::new(NFAutomata::from(tree)),
+            Mode::ThompsonDFA => Box::new(DFAutomata::from(NFAutomata::from(tree))),
+            Mode::Tree => {
+                println!("cannot test a language against a tree.");
+                return; // early return
+            },
+        };
 
-    loop {
-        let selection = Select::with_theme(&theme)
-            .with_prompt("¿Qué quieres visualizar?")
-            .default(0)
-            .items(&selections)
-            .interact()
-            .unwrap();
-
-        if selection == 3 {
-            return;
+        if automata.test(s) {
+            println!("the inputted string matches the language");
+        } else {
+            println!("the inputted string does not match the language");
         }
 
-        let expression = Input::with_theme(&theme)
-            .with_prompt("Tu expresión")
-            .validate_with(move |input: &String| -> Result<(), &str> {
-                match LexTree::try_from(input.as_str()) {
-                    Ok(_) => Ok(()),
-                    Err(err) => {
-                        match err {
-                            LexError::MissingOpeningParenthesis => Err("Olvidaste poner un símbolo `(`!"),
-                            LexError::MissingClosingParenthesis => Err("Olvidaste cerrar un paréntesis!"),
-                            LexError::MissingArgument => Err("No colocaste los argumentos de un operando"),
-                            LexError::Unknown => Err("uhhhmm, algo raro pasó"),
-                        }
-                    }
-                }
-            }).interact_text()
-            .unwrap();
-
-        match selection {
-            0 => {
-                let tree = LexTree::try_from(expression.as_str()).unwrap();
-                LexTreeVisualizer::new(&tree)
-                    .show("test.html");
-            },
-            1 => {
-                let non_deterministic = NFAutomata::try_from(expression.as_str()).unwrap();
-                NFAVisualizer::new(&non_deterministic)
-                    .show("test.html");
-            },
-            2 => {
-                let non_deterministic = NFAutomata::try_from(expression.as_str()).unwrap();
-                let deterministic = DFAutomata::from(non_deterministic);
-                DFAVisualizer::new(&deterministic)
-                    .show("test.html");
-            },
-            _ => panic!("this option does not exist"),
-        }
-
-        println!("\nFelicidades! Puedes ver tu árbol en el archivo test.html\n\n")
+    } else {
+        match cli.mode {
+            Mode::Tree => LexTreeVisualizer::new(&tree).show("test.html"),
+            Mode::NFA => NFAVisualizer::new(&NFAutomata::from(tree)).show("test.html"),
+            Mode::ThompsonDFA =>
+                DFAVisualizer::new(&DFAutomata::from(NFAutomata::from(tree))).show("test.html"),
+        };
     }
 }

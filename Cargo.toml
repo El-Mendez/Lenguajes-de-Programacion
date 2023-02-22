@@ -8,5 +8,5 @@ edition = "2021"
 members = ["lexer"]
 
 [dependencies]
-dialoguer = "0.10.3"
+clap = { version="4.1.6", features=["derive"] }
 lexer = { path = "lexer" }
