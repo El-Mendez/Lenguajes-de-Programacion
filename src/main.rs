@@ -52,11 +52,11 @@ fn main() {
 
     if let Some(s) = &cli.string {
         let automata: Box<dyn Automata> = match cli.mode {
-            Mode::Nfa => Box::new(NFAutomata::from(tree)),
+            Mode::Nfa => Box::new(NFAutomata::from(&tree)),
             Mode::Dfa => Box::new(DFAutomata::from(&tree)),
-            Mode::ThompsonDFA => Box::new(DFAutomata::from(NFAutomata::from(tree))),
+            Mode::ThompsonDFA => Box::new(DFAutomata::from(NFAutomata::from(&tree))),
             Mode::Tree => {
-                println!("cannot test a language against a tree.");
+                eprintln!("cannot test a language against a tree.");
                 return; // early return
             },
         };
@@ -71,9 +71,9 @@ fn main() {
         match cli.mode {
             Mode::Tree => LexTreeVisualizer::new(&tree).show("test.html"),
             Mode::Dfa => DFAVisualizer::new(&DFAutomata::from(&tree)).show("test.html"),
-            Mode::Nfa => NFAVisualizer::new(&NFAutomata::from(tree)).show("test.html"),
+            Mode::Nfa => NFAVisualizer::new(&NFAutomata::from(&tree)).show("test.html"),
             Mode::ThompsonDFA =>
-                DFAVisualizer::new(&DFAutomata::from(NFAutomata::from(tree))).show("test.html"),
+                DFAVisualizer::new(&DFAutomata::from(NFAutomata::from(&tree))).show("test.html"),
         };
     }
 }

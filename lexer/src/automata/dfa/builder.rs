@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use crate::automata::dfa::DFAutomata;
+use crate::automata::State;
 use crate::operator::{BinaryOperator, UnaryOperator};
 use crate::symbols::Symbol;
 use crate::tree::LexTree;
@@ -41,7 +42,7 @@ impl DFABuilder {
 
         // build the automata;
         let mut acceptance_states = HashSet::new();
-        let mut transitions: HashMap<(usize, char), usize> = HashMap::new();
+        let mut transitions: HashMap<(State, char), usize> = HashMap::new();
         let mut current_state_id = 0;
 
         let mut known_states: Vec<HashSet<usize>> = vec![last_node.first_positions];
