@@ -100,7 +100,7 @@ pub fn tokenize_regular_expression(input: &str) -> Result<Vec<LexToken>, LexErro
         return Err(LexError::MissingClosingParenthesis(x, input.to_string()));
     }
 
-    if output.len() == 0 {
+    if output.is_empty() {
         output.push(LexToken::Symbol(Epsilon))
     }
 

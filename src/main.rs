@@ -14,7 +14,7 @@ struct Cli {
     /// optional string to test against the language
     string: Option<String>,
     /// the automata of tree to create from the input expression
-    #[arg(short, long, value_enum, default_value_t = Mode::NFA)]
+    #[arg(short, long, value_enum, default_value_t = Mode::Nfa)]
     mode: Mode,
 }
 
@@ -39,9 +39,9 @@ enum Mode {
     /// LexTree
     Tree,
     /// NDA built using Thompson
-    NFA,
+    Nfa,
     /// DFA built directly from re
-    DFA,
+    Dfa,
     /// DFA built from a Thompson NDA
     ThompsonDFA,
 }
@@ -52,8 +52,8 @@ fn main() {
 
     if let Some(s) = &cli.string {
         let automata: Box<dyn Automata> = match cli.mode {
-            Mode::NFA => Box::new(NFAutomata::from(tree)),
-            Mode::DFA => Box::new(DFAutomata::from(&tree)),
+            Mode::Nfa => Box::new(NFAutomata::from(tree)),
+            Mode::Dfa => Box::new(DFAutomata::from(&tree)),
             Mode::ThompsonDFA => Box::new(DFAutomata::from(NFAutomata::from(tree))),
             Mode::Tree => {
                 println!("cannot test a language against a tree.");
@@ -70,8 +70,8 @@ fn main() {
     } else {
         match cli.mode {
             Mode::Tree => LexTreeVisualizer::new(&tree).show("test.html"),
-            Mode::DFA => DFAVisualizer::new(&DFAutomata::from(&tree)).show("test.html"),
-            Mode::NFA => NFAVisualizer::new(&NFAutomata::from(tree)).show("test.html"),
+            Mode::Dfa => DFAVisualizer::new(&DFAutomata::from(&tree)).show("test.html"),
+            Mode::Nfa => NFAVisualizer::new(&NFAutomata::from(tree)).show("test.html"),
             Mode::ThompsonDFA =>
                 DFAVisualizer::new(&DFAutomata::from(NFAutomata::from(tree))).show("test.html"),
         };

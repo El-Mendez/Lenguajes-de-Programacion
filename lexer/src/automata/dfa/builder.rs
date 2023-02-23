@@ -100,7 +100,7 @@ impl DFABuilder {
                         let position = self.follow_positions.len();
 
                         self.leaf_values.entry(*x)
-                            .or_insert_with(|| HashSet::new())
+                            .or_insert_with(HashSet::new)
                             .insert(position);
 
                         self.follow_positions.push(HashSet::new());
