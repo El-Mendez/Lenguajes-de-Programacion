@@ -40,6 +40,8 @@ enum Mode {
     Tree,
     /// NDA built using Thompson
     NFA,
+    /// DFA built directly from re
+    DFA,
     /// DFA built from a Thompson NDA
     ThompsonDFA,
 }
@@ -51,6 +53,7 @@ fn main() {
     if let Some(s) = &cli.string {
         let automata: Box<dyn Automata> = match cli.mode {
             Mode::NFA => Box::new(NFAutomata::from(tree)),
+            Mode::DFA => Box::new(DFAutomata::from(&tree)),
             Mode::ThompsonDFA => Box::new(DFAutomata::from(NFAutomata::from(tree))),
             Mode::Tree => {
                 println!("cannot test a language against a tree.");
@@ -67,6 +70,7 @@ fn main() {
     } else {
         match cli.mode {
             Mode::Tree => LexTreeVisualizer::new(&tree).show("test.html"),
+            Mode::DFA => DFAVisualizer::new(&DFAutomata::from(&tree)).show("test.html"),
             Mode::NFA => NFAVisualizer::new(&NFAutomata::from(tree)).show("test.html"),
             Mode::ThompsonDFA =>
                 DFAVisualizer::new(&DFAutomata::from(NFAutomata::from(tree))).show("test.html"),

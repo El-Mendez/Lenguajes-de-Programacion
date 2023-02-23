@@ -6,8 +6,8 @@ use super::super::{State, Automata};
 use super::super::dfa::DFAutomata;
 
 pub struct NFAutomata {
-    pub transitions: HashMap<(State, Symbol), HashSet<State>>,
-    pub acceptance_state: State,
+    pub(super) transitions: HashMap<(State, Symbol), HashSet<State>>,
+    pub(super) acceptance_state: State,
 }
 
 impl NFAutomata {
