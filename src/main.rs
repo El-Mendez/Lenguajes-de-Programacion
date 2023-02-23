@@ -3,6 +3,7 @@ use lexer::automata::dfa::{DFAutomata, DFAVisualizer};
 use lexer::automata::nfa::{NFAutomata, NFAVisualizer};
 use lexer::tree::{LexTree, LexTreeVisualizer};
 use lexer::automata::Automata;
+use lexer::LexError;
 
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -18,10 +19,18 @@ struct Cli {
 }
 
 fn valid_expression(s: &str) -> Result<String, String> {
-    if let Ok(_) = LexTree::try_from(s) {
-        Ok(s.into())
-    } else {
-        Err("\n\n\tinvalid re expression".into())
+    match LexTree::try_from(s) {
+        Ok(_) => Ok(s.to_string()),
+        Err(err) => {
+            let (tabs, err) = match err {
+                LexError::MissingOpeningParenthesis(x, _) | LexError::MissingClosingParenthesis(x, _) =>
+                    (x, "expected matching parenthesis"),
+                LexError::MissingArgument(x, _) => (x, "expected argument")
+            };
+
+            let spaces = " ".repeat(tabs);
+            Err(format!("\n\t{s}\n\t{spaces}↑\n\t{spaces}{err}"))
+        }
     }
 }
 

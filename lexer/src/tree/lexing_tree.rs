@@ -13,8 +13,8 @@ pub enum LexTree {
 }
 
 impl LexTree {
-    fn from_reference(stack: &mut Vec<LexToken>) -> Result<LexTree, LexError> {
-        let result = match stack.pop().ok_or(LexError::MissingArgument)? {
+    fn from_reference(stack: &mut Vec<LexToken>) -> LexTree {
+        let result = match stack.pop().expect("expected more tokens on the stack") {
             LexToken::Symbol(value) =>
                 LexTree::Leaf { value },
 
@@ -24,44 +24,36 @@ impl LexTree {
                         LexTree::Binary {
                             value,
                             // Because of postfix, the first pop would return the right child,
-                            right_child: LexTree::from_reference(stack)?.into(),
-                            left_child: LexTree::from_reference(stack)?.into(),
+                            right_child: LexTree::from_reference(stack).into(),
+                            left_child: LexTree::from_reference(stack).into(),
                         },
 
                     Operator::Unary(value) =>
                         LexTree::Unary {
                             value,
-                            child: LexTree::from_reference(stack)?.into(),
+                            child: LexTree::from_reference(stack).into(),
                         },
-                    Operator::OpenParenthesis => return Err(LexError::MissingClosingParenthesis),
+                    Operator::OpenParenthesis | Operator::CloseParenthesis =>
+                        panic!("there shouldn't be any parenthesis in a postfix expression"),
 
-                    Operator::CloseParenthesis => return Err(LexError::MissingOpeningParenthesis),
                 }
             }
         };
 
-        Ok(result)
+        result
     }
 }
 
 impl<T> Visitable<T> for LexTree {}
-
-impl TryFrom<Vec<LexToken>> for LexTree {
-    type Error = LexError;
-
-    fn try_from(mut value: Vec<LexToken>) -> Result<Self, Self::Error> {
-        LexTree::from_reference(&mut value)
-    }
-}
 
 
 impl TryFrom<&str> for LexTree {
     type Error = LexError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        to_postfix(
+        Ok(LexTree::from_reference(&mut to_postfix(
             tokenize_regular_expression(value)?
-        )?.try_into()
+        )))
     }
 }
 
