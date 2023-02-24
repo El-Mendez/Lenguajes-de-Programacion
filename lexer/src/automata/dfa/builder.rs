@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use crate::automata::dfa::DFAutomata;
+use crate::automata::dfa::optimize::DFAOptimizer;
 use crate::automata::State;
 use crate::operator::{BinaryOperator, UnaryOperator};
 use crate::symbols::Symbol;
@@ -16,7 +17,7 @@ pub struct DFABuilder {
     leaf_values: HashMap<char, HashSet<usize>>,
 }
 impl DFABuilder {
-    pub fn build(node: &LexTree) -> DFAutomata {
+    pub fn build(node: &LexTree, optimize: bool) -> DFAutomata {
         let mut builder = DFABuilder {
             follow_positions: Vec::new(),
             leaf_values: HashMap::new(),
@@ -85,7 +86,15 @@ impl DFABuilder {
             }
         }
 
-        DFAutomata::new(transitions, acceptance_states, current_state_id-1)
+        if optimize {
+            DFAOptimizer::optimize(
+                transitions,
+                acceptance_states,
+                current_state_id-1,
+                builder.leaf_values.into_keys().collect())
+        } else {
+            DFAutomata::new(transitions, acceptance_states, current_state_id-1)
+        }
     }
 
     fn connect_positions(&mut self, from_positions: &HashSet<usize>, follow_positions: &HashSet<usize>) {

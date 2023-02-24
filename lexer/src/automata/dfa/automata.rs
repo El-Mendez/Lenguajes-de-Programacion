@@ -19,6 +19,10 @@ impl DFAutomata {
     fn movement(&self, state: State, c: char) -> Option<State> {
         self.transitions.get(&(state, c)).copied()
     }
+
+    pub fn unoptimized_from(node: &LexTree) -> DFAutomata {
+        DFABuilder::build(node, false)
+    }
 }
 
 impl Automata for DFAutomata {
@@ -44,12 +48,12 @@ impl TryFrom<&str> for DFAutomata {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let node = LexTree::try_from(value)?;
-        Ok(DFABuilder::build(&node))
+        Ok(DFABuilder::build(&node, true))
     }
 }
 
 impl From<&LexTree> for DFAutomata {
     fn from(value: &LexTree) -> Self {
-        DFABuilder::build(value)
+        DFABuilder::build(value, true)
     }
 }

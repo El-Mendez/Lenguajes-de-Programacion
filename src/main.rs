@@ -40,10 +40,12 @@ enum Mode {
     Tree,
     /// NDA built using Thompson
     Nfa,
-    /// DFA built directly from re
+    /// minimized DFA built directly from re
     Dfa,
+    /// DFA built directly from re
+    DfaUnoptimized,
     /// DFA built from a Thompson NDA
-    ThompsonDFA,
+    ThompsonDfa,
 }
 
 fn main() {
@@ -54,7 +56,8 @@ fn main() {
         let automata: Box<dyn Automata> = match cli.mode {
             Mode::Nfa => Box::new(NFAutomata::from(&tree)),
             Mode::Dfa => Box::new(DFAutomata::from(&tree)),
-            Mode::ThompsonDFA => Box::new(DFAutomata::from(NFAutomata::from(&tree))),
+            Mode::DfaUnoptimized => Box::new(DFAutomata::unoptimized_from(&tree)),
+            Mode::ThompsonDfa => Box::new(DFAutomata::from(NFAutomata::from(&tree))),
             Mode::Tree => {
                 eprintln!("cannot test a language against a tree.");
                 return; // early return
@@ -71,8 +74,9 @@ fn main() {
         match cli.mode {
             Mode::Tree => LexTreeVisualizer::new(&tree).show("test.html"),
             Mode::Dfa => DFAVisualizer::new(&DFAutomata::from(&tree)).show("test.html"),
+            Mode::DfaUnoptimized => DFAVisualizer::new(&DFAutomata::unoptimized_from(&tree)).show("test.html"),
             Mode::Nfa => NFAVisualizer::new(&NFAutomata::from(&tree)).show("test.html"),
-            Mode::ThompsonDFA =>
+            Mode::ThompsonDfa =>
                 DFAVisualizer::new(&DFAutomata::from(NFAutomata::from(&tree))).show("test.html"),
         };
     }
