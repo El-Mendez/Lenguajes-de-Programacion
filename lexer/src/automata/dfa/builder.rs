@@ -59,9 +59,10 @@ impl DFABuilder {
                     .intersection(current_char_positions)
                     .collect();
 
-               if positions_with_cars.is_empty() {
-                   continue;
-               }
+
+                if positions_with_cars.is_empty() {
+                    continue;
+                }
 
                 let new_state = positions_with_cars
                     .into_iter()

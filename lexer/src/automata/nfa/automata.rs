@@ -61,6 +61,10 @@ impl NFAutomata {
 
             for x in &chars_with_transitions {
                 let new_state = self.epsilon_closure(self.movement(current_state, Symbol::Character(*x)));
+                if new_state.is_empty() {
+                    continue;
+                }
+
                 let to = known_states.iter()
                     .position(|other| other == &new_state)
                     .unwrap_or_else(|| {
