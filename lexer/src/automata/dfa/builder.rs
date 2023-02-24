@@ -55,7 +55,16 @@ impl DFABuilder {
             }
 
             for (c, current_char_positions) in &builder.leaf_values {
-                let new_state = current_state.intersection(current_char_positions)
+                let positions_with_cars: Vec<_> = current_state
+                    .intersection(current_char_positions)
+                    .collect();
+
+               if positions_with_cars.is_empty() {
+                   continue;
+               }
+
+                let new_state = positions_with_cars
+                    .into_iter()
                     .fold(HashSet::new(),
                           |mut states, state| { states.extend(&builder.follow_positions[*state]); states });
 

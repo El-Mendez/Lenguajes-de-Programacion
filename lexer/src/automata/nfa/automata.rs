@@ -98,7 +98,7 @@ impl Automata for NFAutomata {
 
 impl From<&LexTree> for NFAutomata {
     fn from(value: &LexTree) -> Self {
-        let builder = NFABuilder::build(&value);
+        let builder = NFABuilder::build(value);
 
         NFAutomata {
             transitions: builder.transitions,
