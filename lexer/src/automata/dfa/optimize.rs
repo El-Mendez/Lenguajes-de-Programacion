@@ -149,7 +149,8 @@ impl DFAOptimizer {
 
     fn partition_containing_transition(&self, state: State, c: char) -> Option<usize> {
         let new_state = self.old_transitions.get(&(state, c))?;
-        Some(self.partition_containing(*new_state)?)
+        let new_state = self.partition_containing(*new_state)?;
+        Some(new_state)
     }
 
     fn partition_containing(&self, state: State) -> Option<usize> {
