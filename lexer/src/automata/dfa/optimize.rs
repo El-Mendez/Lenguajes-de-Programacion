@@ -3,122 +3,158 @@ use crate::automata::dfa::DFAutomata;
 use crate::automata::State;
 
 pub struct DFAOptimizer{
-    transitions: HashMap<(State, char), State>,
+    old_transitions: HashMap<(State, char), State>,
     partitions: Vec<HashSet<State>>,
+    alphabet: Vec<char>,
+    old_acceptance_states: HashSet<State>,
 }
 
 impl DFAOptimizer {
     pub fn optimize(transitions: HashMap<(State, char), State>, old_acceptance_states: HashSet<State>, last_state: State, alphabet: Vec<char>) -> DFAutomata {
         if old_acceptance_states.is_empty() {
+            // if the expression accepts nothing then let's just return an automata that does that
             return DFAutomata { transitions: HashMap::new(), acceptance_states: HashSet::new(), last_state: 0 }
         }
 
-        let other_states: HashSet<State> = (0..=last_state)
-            .into_iter()
-            .filter(|x| !old_acceptance_states.contains(x))
-            .collect();
+        let mut optimizer = DFAOptimizer::new(transitions, old_acceptance_states, alphabet, last_state);
 
-        let mut optimizer = if other_states.is_empty() {
-            // remember we still may have an implicit fail state! We still need to reduce stuff
-            DFAOptimizer::new(transitions, vec![old_acceptance_states.clone()], &alphabet)
+        let (new_transitions, new_acceptance_states) = optimizer.new_transitions();
+
+        DFAutomata { transitions: new_transitions,
+            acceptance_states: new_acceptance_states,
+            last_state: optimizer.partitions.len()-1
+        }
+    }
+
+    fn new(old_transitions: HashMap<(State, char), State>, acceptance_states: HashSet<State>, alphabet: Vec<char>, last_state: State) -> DFAOptimizer {
+        let mut optimizer = if acceptance_states.len()-1 == last_state {
+            DFAOptimizer {
+                old_transitions,
+                partitions: vec![acceptance_states.clone()],
+                alphabet,
+                old_acceptance_states: acceptance_states
+            }
         } else {
-            DFAOptimizer::new(transitions, vec![other_states, old_acceptance_states.clone()], &alphabet)
+            let other_states: HashSet<State> = (0..=last_state)
+                .into_iter()
+                .filter(|x| !acceptance_states.contains(x))
+                .collect();
+
+            DFAOptimizer {
+                old_transitions,
+                partitions: vec![other_states, acceptance_states.clone()],
+                alphabet,
+                old_acceptance_states: acceptance_states
+            }
         };
 
+        optimizer.fix_partitions();
+        optimizer.remove_dead_partitions();
+        optimizer
+    }
 
+    fn fix_partitions(&mut self) {
+        let mut changes_were_made = true;
+        while changes_were_made {
+            changes_were_made = false;
+
+            for &c in &self.alphabet {
+                let mut new_partitions = Vec::new();
+
+                for partition in &self.partitions {
+                    let mut current_partitions_splits = HashMap::new();
+
+                    // can't split a partition of one. There shouldn't be partitions of zero too
+                    if partition.len() == 1 {
+                        new_partitions.push(partition.clone());
+                        continue
+                    }
+
+                    for &state in partition {
+                        let transition_destination = self
+                            .partition_containing_transition(state, c);
+
+                        current_partitions_splits
+                            .entry(transition_destination)
+                            .or_insert_with(HashSet::new)
+                            .insert(state);
+                    }
+
+                    // add all the discovered new states
+                    new_partitions.extend(current_partitions_splits.into_values());
+                }
+
+                if new_partitions.len() != self.partitions.len() {
+                    changes_were_made = true;
+                    self.partitions = new_partitions;
+                }
+            }
+        }
+    }
+
+    fn remove_dead_partitions(&mut self) {
+        // because it's already reduced we can only have one dead partition
+        let dead_partition = self.partitions.iter()
+            // we only really need a representative state
+            .map(|partition| partition.iter().next().unwrap())
+            .enumerate()
+            .position(|(i, &state)| self.is_dead_partition(i, state));
+
+        if let Some(dead_position) = dead_partition {
+            self.partitions.remove(dead_position);
+        }
+    }
+
+    fn is_dead_partition(&self, index: usize, state: State) -> bool {
+        // we can't really remove a dead accepting state
+        !self.old_acceptance_states.contains(&state) && self.alphabet.iter()
+            .all(|&c|
+                if let Some(x) = self.partition_containing_transition(state, c) {
+                    x == index // the transitions goes to itself
+                } else {
+                    true // the transition goes to nowhere
+                }
+            )
+    }
+
+    fn new_transitions(&mut self) -> (HashMap<(State, char), State>, HashSet<usize>) {
         // make the partition containing the initial state the initial partition
-        let initial_partition = optimizer.partitions
+        let initial_partition = self.partitions
             .iter()
             .position(|p| p.contains(&0))
             .expect("there must be an initial state!");
 
-        optimizer.partitions.swap(0, initial_partition);
+        self.partitions.swap(0, initial_partition);
 
         let mut transitions = HashMap::new();
         let mut acceptance_states = HashSet::new();
 
         // build the new automata from the partitions
-        for (from, partition) in optimizer.partitions.iter().enumerate() {
+        for (from, partition) in self.partitions.iter().enumerate() {
             // get a representative state
-            if !partition.is_disjoint(&old_acceptance_states) {
+            if !partition.is_disjoint(&self.old_acceptance_states) {
                 acceptance_states.insert(from);
             }
-            let state = partition.iter().next().expect("no empty partitions!");
+            let representative_state = partition.iter().next().expect("no empty partitions!");
 
-            for &c in &alphabet {
-                if let Some(to) = optimizer.partition_containing_transition(*state, c) {
+            for &c in &self.alphabet {
+                if let Some(to) = self.partition_containing_transition(*representative_state, c) {
                     transitions.insert((from, c), to);
                 }
             }
         }
 
-        DFAutomata { transitions, acceptance_states, last_state: optimizer.partitions.len()-1 }
-    }
-
-    fn new(transitions: HashMap<(State, char), State>, partitions: Vec<HashSet<State>>, alphabet: &Vec<char>) -> DFAOptimizer {
-        let mut optimizer = DFAOptimizer { transitions, partitions };
-
-        let mut changes_were_made = true;
-        let mut changes_were_made_this_iteration = false;
-        let mut partitions_going_to: HashMap<Option<usize>, usize> = HashMap::new();
-        let mut new_partitions = optimizer.partitions.clone();
-
-        while changes_were_made {
-            changes_were_made = false;
-
-            for &c in alphabet {
-
-                for i in 0..optimizer.partitions.len() {
-                    let current_partition = &optimizer.partitions[i];
-                    if current_partition.len() == 1 {
-                        // we can't really partition a partition of one and there shouldn't be empty partitions.
-                        continue;
-                    }
-                    // make current partition into an iterator to avoid some hashsets iteration randomness
-                    let mut current_partition = current_partition.iter();
-
-                    let mut expected_partition_transition = optimizer.partition_containing_transition(*current_partition.next().unwrap(), c);
-
-                    for &state in current_partition {
-                        partitions_going_to.clear();
-                        let partition_transition = optimizer.partition_containing_transition(state, c);
-                        if partition_transition == expected_partition_transition {
-                            continue;
-                        }
-
-                        changes_were_made = true;
-                        changes_were_made_this_iteration = true;
-
-                        let new_partition = partitions_going_to.entry(partition_transition)
-                            .or_insert_with(|| {
-                                new_partitions.push(HashSet::new());
-                                new_partitions.len() - 1
-                            });
-
-                        new_partitions[*new_partition].insert(state);
-                        new_partitions[i].remove(&state);
-                    }
-                }
-
-                if changes_were_made_this_iteration {
-                    changes_were_made_this_iteration = false;
-                    optimizer.partitions = new_partitions.clone();
-                }
-            }
-        }
-
-        optimizer
+        (transitions, acceptance_states)
     }
 
     fn partition_containing_transition(&self, state: State, c: char) -> Option<usize> {
-        let new_state = self.transitions.get(&(state, c))?;
-        Some(self.partition_containing(*new_state))
+        let new_state = self.old_transitions.get(&(state, c))?;
+        Some(self.partition_containing(*new_state)?)
     }
 
-    fn partition_containing(&self, state: State) -> usize {
+    fn partition_containing(&self, state: State) -> Option<usize> {
         self.partitions.iter()
             .position(|partition| partition.contains(&state))
-            .expect("all states should be in the partitions")
     }
 }
 
