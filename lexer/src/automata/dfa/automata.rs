@@ -39,7 +39,7 @@ impl Automata for DFAutomata {
 
 impl From<NFAutomata> for DFAutomata {
     fn from(value: NFAutomata) -> Self {
-        value.into_determinate()
+        value.into_determinate(true)
     }
 }
 

@@ -46,6 +46,8 @@ enum Mode {
     DfaUnoptimized,
     /// DFA built from a Thompson NDA
     ThompsonDfa,
+    /// DFA built from a Thompson NDA without minimizations
+    ThompsonDfaUnoptimized,
 }
 
 fn main() {
@@ -57,7 +59,8 @@ fn main() {
             Mode::Nfa => Box::new(NFAutomata::from(&tree)),
             Mode::Dfa => Box::new(DFAutomata::from(&tree)),
             Mode::DfaUnoptimized => Box::new(DFAutomata::unoptimized_from(&tree)),
-            Mode::ThompsonDfa => Box::new(DFAutomata::from(NFAutomata::from(&tree))),
+            Mode::ThompsonDfaUnoptimized => Box::new(NFAutomata::from(&tree).into_determinate(false)),
+            Mode::ThompsonDfa => Box::new(NFAutomata::from(&tree).into_determinate(true)),
             Mode::Tree => {
                 eprintln!("cannot test a language against a tree.");
                 return; // early return
@@ -77,7 +80,9 @@ fn main() {
             Mode::DfaUnoptimized => DFAVisualizer::new(&DFAutomata::unoptimized_from(&tree)).show("test.html"),
             Mode::Nfa => NFAVisualizer::new(&NFAutomata::from(&tree)).show("test.html"),
             Mode::ThompsonDfa =>
-                DFAVisualizer::new(&DFAutomata::from(NFAutomata::from(&tree))).show("test.html"),
+                DFAVisualizer::new(&NFAutomata::from(&tree).into_determinate(true)).show("test.html"),
+            Mode::ThompsonDfaUnoptimized =>
+                DFAVisualizer::new(&NFAutomata::from(&tree).into_determinate(false)).show("test.html"),
         };
     }
 }

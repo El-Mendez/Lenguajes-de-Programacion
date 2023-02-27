@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use super::builder::NFABuilder;
 use crate::{LexError, Symbol};
+use crate::automata::dfa::DFAOptimizer;
 use crate::tree::LexTree;
 use super::super::{State, Automata};
 use super::super::dfa::DFAutomata;
@@ -37,8 +38,8 @@ impl NFAutomata {
         self.transitions.get(&(state, symbol))
     }
 
-    pub(crate) fn into_determinate(self) -> DFAutomata {
-        let chars_with_transitions: HashSet<char> = self.transitions
+    pub fn into_determinate(self, optimized: bool) -> DFAutomata {
+        let chars_with_transitions: Vec<char> = self.transitions
             .keys()
             .filter_map(|(_, x)| if let Symbol::Character(x) = x { Some(*x) } else { None })
             .collect();
@@ -81,7 +82,11 @@ impl NFAutomata {
             }
         }
 
-        DFAutomata::new(transitions, acceptance_states, current_state_id-1)
+        if optimized {
+            DFAOptimizer::optimize(transitions, acceptance_states, current_state_id-1, chars_with_transitions)
+        } else {
+            DFAutomata::new(transitions, acceptance_states, current_state_id-1)
+        }
     }
 }
 
