@@ -10,10 +10,8 @@ pub trait MermaidGraph {
     <pre class="mermaid">
       {diagram_header}{diagram_content}
     </pre>
-    <script type="module">
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
-      mermaid.initialize({{ startOnLoad: true }});
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script> mermaid.initialize({{startOnLoad:true, theme:'forest',themeVariables:{{edgeLabelBackground: '#FFFFFF'}}}});</script>
   </body>
 </html>
         "#)
